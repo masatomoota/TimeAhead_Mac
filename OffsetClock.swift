@@ -3,11 +3,14 @@ import Foundation
 
 final class OffsetClockApp: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
+    private var menu: NSMenu?
     private var timer: Timer?
+    private var pendingSingleClickAction: DispatchWorkItem?
     private static let offsetDefaultsKey = "offsetMinutes"
     private let allowedOffsetRange = -1440...1440
     private let presetOffsets = [0, 5, 10, 15, 30, 60]
     private let defaultOffsetMinutes: Int
+    private let promptOnLaunch: Bool
     private var currentOffsetItem: NSMenuItem?
     private var presetItems: [Int: NSMenuItem] = [:]
     private var offsetMinutes: Int {
@@ -25,8 +28,9 @@ final class OffsetClockApp: NSObject, NSApplicationDelegate {
         return f
     }()
 
-    init(defaultOffsetMinutes: Int) {
+    init(defaultOffsetMinutes: Int, promptOnLaunch: Bool) {
         self.defaultOffsetMinutes = defaultOffsetMinutes
+        self.promptOnLaunch = promptOnLaunch
         let defaults = UserDefaults.standard
         if defaults.object(forKey: Self.offsetDefaultsKey) != nil {
             self.offsetMinutes = defaults.integer(forKey: Self.offsetDefaultsKey)
@@ -38,6 +42,7 @@ final class OffsetClockApp: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        configureStatusItemButton()
         buildMenu()
         updateClock()
 
@@ -49,11 +54,24 @@ final class OffsetClockApp: NSObject, NSApplicationDelegate {
         if let timer {
             RunLoop.main.add(timer, forMode: .common)
         }
+
+        if promptOnLaunch {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+                self?.promptCustomOffset()
+            }
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        pendingSingleClickAction?.cancel()
+        pendingSingleClickAction = nil
         timer?.invalidate()
         timer = nil
+    }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        promptCustomOffset()
+        return true
     }
 
     @objc private func updateClock() {
@@ -71,29 +89,31 @@ final class OffsetClockApp: NSObject, NSApplicationDelegate {
     }
 
     @objc private func promptCustomOffset() {
-        NSApp.activate(ignoringOtherApps: true)
+        pendingSingleClickAction?.cancel()
+        pendingSingleClickAction = nil
+        runWithForegroundInteraction {
+            let alert = NSAlert()
+            alert.alertStyle = .informational
+            alert.messageText = "Set Clock Offset (minutes)"
+            alert.informativeText = "Positive advances time, negative delays it. Range: -1440 to 1440."
+            let input = NSTextField(string: String(offsetMinutes))
+            input.placeholderString = "e.g. 10"
+            input.frame = NSRect(x: 0, y: 0, width: 220, height: 24)
+            alert.accessoryView = input
+            alert.addButton(withTitle: "Apply")
+            alert.addButton(withTitle: "Cancel")
 
-        let alert = NSAlert()
-        alert.alertStyle = .informational
-        alert.messageText = "Set Clock Offset (minutes)"
-        alert.informativeText = "Positive advances time, negative delays it. Range: -1440 to 1440."
-        let input = NSTextField(string: String(offsetMinutes))
-        input.placeholderString = "e.g. 10"
-        input.frame = NSRect(x: 0, y: 0, width: 220, height: 24)
-        alert.accessoryView = input
-        alert.addButton(withTitle: "Apply")
-        alert.addButton(withTitle: "Cancel")
+            guard alert.runModal() == .alertFirstButtonReturn else {
+                return
+            }
 
-        guard alert.runModal() == .alertFirstButtonReturn else {
-            return
+            let trimmed = input.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let minutes = Int(trimmed), allowedOffsetRange.contains(minutes) else {
+                showValidationError()
+                return
+            }
+            setOffsetMinutes(minutes)
         }
-
-        let trimmed = input.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let minutes = Int(trimmed), allowedOffsetRange.contains(minutes) else {
-            showValidationError()
-            return
-        }
-        setOffsetMinutes(minutes)
     }
 
     @objc private func quit() {
@@ -108,13 +128,13 @@ final class OffsetClockApp: NSObject, NSApplicationDelegate {
     }
 
     private func buildMenu() {
-        let menu = NSMenu()
+        let statusMenu = NSMenu()
         let offsetItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
         offsetItem.isEnabled = false
-        menu.addItem(offsetItem)
+        statusMenu.addItem(offsetItem)
         currentOffsetItem = offsetItem
 
-        menu.addItem(NSMenuItem.separator())
+        statusMenu.addItem(NSMenuItem.separator())
 
         for minutes in presetOffsets {
             let item = NSMenuItem(title: formattedMenuTitle(for: minutes),
@@ -122,27 +142,80 @@ final class OffsetClockApp: NSObject, NSApplicationDelegate {
                                   keyEquivalent: "")
             item.target = self
             item.tag = minutes
-            menu.addItem(item)
+            statusMenu.addItem(item)
             presetItems[minutes] = item
         }
 
         let customItem = NSMenuItem(title: "Custom...", action: #selector(promptCustomOffset), keyEquivalent: "")
         customItem.target = self
-        menu.addItem(customItem)
+        statusMenu.addItem(customItem)
 
         let defaultItem = NSMenuItem(title: "Use Default (\(formattedOffset(defaultOffsetMinutes)) min)",
                                      action: #selector(selectDefaultOffset),
                                      keyEquivalent: "")
         defaultItem.target = self
-        menu.addItem(defaultItem)
+        statusMenu.addItem(defaultItem)
 
-        menu.addItem(NSMenuItem.separator())
+        statusMenu.addItem(NSMenuItem.separator())
         let quitItem = NSMenuItem(title: "Quit Offset Clock", action: #selector(quit), keyEquivalent: "q")
         quitItem.target = self
-        menu.addItem(quitItem)
+        statusMenu.addItem(quitItem)
 
-        statusItem.menu = menu
+        menu = statusMenu
         refreshMenuState()
+    }
+
+    private func configureStatusItemButton() {
+        guard let button = statusItem.button else {
+            return
+        }
+        button.target = self
+        button.action = #selector(handleStatusItemClick)
+        button.sendAction(on: [.leftMouseUp, .rightMouseUp])
+    }
+
+    @objc private func handleStatusItemClick() {
+        guard let event = NSApp.currentEvent else {
+            popUpMenu()
+            return
+        }
+
+        if event.type == .rightMouseUp {
+            cancelPendingSingleClick()
+            promptCustomOffset()
+            return
+        }
+
+        if event.clickCount >= 2 {
+            cancelPendingSingleClick()
+            promptCustomOffset()
+            return
+        }
+
+        scheduleSingleClickMenu()
+    }
+
+    private func scheduleSingleClickMenu() {
+        cancelPendingSingleClick()
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.popUpMenu()
+        }
+        pendingSingleClickAction = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + NSEvent.doubleClickInterval, execute: workItem)
+    }
+
+    private func cancelPendingSingleClick() {
+        pendingSingleClickAction?.cancel()
+        pendingSingleClickAction = nil
+    }
+
+    private func popUpMenu() {
+        cancelPendingSingleClick()
+        guard let menu, let button = statusItem.button else {
+            return
+        }
+        let origin = NSPoint(x: 0, y: button.bounds.maxY + 2)
+        menu.popUp(positioning: nil, at: origin, in: button)
     }
 
     private func refreshMenuState() {
@@ -164,12 +237,27 @@ final class OffsetClockApp: NSObject, NSApplicationDelegate {
     }
 
     private func showValidationError() {
-        let alert = NSAlert()
-        alert.alertStyle = .warning
-        alert.messageText = "Invalid offset"
-        alert.informativeText = "Please enter an integer between -1440 and 1440."
-        alert.addButton(withTitle: "OK")
-        _ = alert.runModal()
+        runWithForegroundInteraction {
+            let alert = NSAlert()
+            alert.alertStyle = .warning
+            alert.messageText = "Invalid offset"
+            alert.informativeText = "Please enter an integer between -1440 and 1440."
+            alert.addButton(withTitle: "OK")
+            _ = alert.runModal()
+        }
+    }
+
+    private func runWithForegroundInteraction(_ block: () -> Void) {
+        let previousPolicy = NSApp.activationPolicy()
+        let switchedToRegular = previousPolicy != .regular
+        if switchedToRegular {
+            _ = NSApp.setActivationPolicy(.regular)
+        }
+        NSApp.activate(ignoringOtherApps: true)
+        block()
+        if switchedToRegular {
+            _ = NSApp.setActivationPolicy(previousPolicy)
+        }
     }
 }
 
@@ -184,9 +272,23 @@ func readDefaultOffsetMinutes(from args: [String]) -> Int {
     return min(1440, max(-1440, value))
 }
 
+func readPromptOnLaunch(from args: [String]) -> Bool {
+    if args.contains("--prompt-on-launch") {
+        return true
+    }
+    if args.contains("--no-prompt-on-launch") {
+        return false
+    }
+
+    // Show the prompt by default when launched as an app bundle.
+    let packageType = Bundle.main.object(forInfoDictionaryKey: "CFBundlePackageType") as? String
+    return packageType == "APPL"
+}
+
 let app = NSApplication.shared
 let offsetMinutes = readDefaultOffsetMinutes(from: CommandLine.arguments)
-let delegate = OffsetClockApp(defaultOffsetMinutes: offsetMinutes)
+let promptOnLaunch = readPromptOnLaunch(from: CommandLine.arguments)
+let delegate = OffsetClockApp(defaultOffsetMinutes: offsetMinutes, promptOnLaunch: promptOnLaunch)
 app.delegate = delegate
 app.setActivationPolicy(.accessory)
 app.run()

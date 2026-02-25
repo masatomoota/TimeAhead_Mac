@@ -16,6 +16,11 @@ macOS のシステム時刻を変更せず、メニューバーに「現在時�
 
 ## 使い方
 メニューバーの TimeAhead をクリックしてオフセットを変更します。
+- `Applications/TimeAhead.app` を開いて起動した場合は、起動直後にオフセット入力ポップアップを表示
+- 起動中に `Applications/TimeAhead.app` を再度開いた場合も、オフセット入力ポップアップを表示
+- 左クリック: メニューを開く
+- 右クリック: オフセット入力ポップアップを直接開く
+- 左ダブルクリック: オフセット入力ポップアップを直接開く
 
 ### プリセット
 - `0 min (real time)`
@@ -36,6 +41,34 @@ macOS のシステム時刻を変更せず、メニューバーに「現在時�
 ```bash
 swiftc "/Users/masatomo/_git_repository/TimeAhead/OffsetClock.swift" -o "/Users/masatomo/_git_repository/TimeAhead/offset-clock"
 ```
+
+## `.app` 形式でビルド
+```bash
+cd "/Users/masatomo/_git_repository/TimeAhead"
+./scripts/build_app.sh
+```
+
+- 生成物: `/Users/masatomo/_git_repository/TimeAhead/build/TimeAhead.app`
+- 署名IDを指定する場合:
+```bash
+cd "/Users/masatomo/_git_repository/TimeAhead"
+SIGN_IDENTITY="Developer ID Application: YOUR_NAME (TEAM_ID)" ./scripts/build_app.sh
+```
+
+## `.dmg` 形式で配布用にビルド
+```bash
+cd "/Users/masatomo/_git_repository/TimeAhead"
+./scripts/build_dmg.sh
+```
+
+- 生成物: `/Users/masatomo/_git_repository/TimeAhead/build/TimeAhead.dmg`
+- DMGには `TimeAhead.app` と `Applications` へのショートカットが入ります。
+
+## 他のMacへのインストール
+1. `TimeAhead.dmg` を対象Macにコピーして開く
+2. `TimeAhead.app` を `Applications` にドラッグ
+3. `Applications/TimeAhead.app` を起動
+4. 初回は Gatekeeper 警告が出る場合があるため、右クリック→「開く」で許可
 
 ## 起動・再起動
 ```bash
