@@ -8,6 +8,14 @@ macOS のシステム時刻を変更せず、メニューバーに「現在時�
 - オフセット分はメニュー UI から変更可能
 - ログイン時自動起動 (LaunchAgent)
 
+## 動作環境
+- OS: macOS 13.0 以上
+- CPU: Apple Silicon (`arm64`)
+- 配布済みバイナリ (`offset-clock` / `build/TimeAhead.app` / `dist/*.zip`) は `arm64` 向け
+- Intel Mac で使う場合は、対象Mac上でソースからビルドして実行
+- ソースビルドに必要: Xcode Command Line Tools (`swiftc` が利用可能なこと)
+- メニューバー常駐アプリのため、GUI セッション (Aqua) での実行が前提
+
 ## ファイル構成
 - ソース: `/Users/masatomo/_git_repository/TimeAhead/OffsetClock.swift`
 - バイナリ: `/Users/masatomo/_git_repository/TimeAhead/offset-clock`
