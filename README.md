@@ -17,10 +17,14 @@ macOS のシステム時刻を変更せず、メニューバーに「現在時�
 - メニューバー常駐アプリのため、GUI セッション (Aqua) での実行が前提
 
 ## ファイル構成
-- ソース: `/Users/masatomo/_git_repository/TimeAhead/OffsetClock.swift`
-- バイナリ: `/Users/masatomo/_git_repository/TimeAhead/offset-clock`
-- LaunchAgent: `/Users/masatomo/Library/LaunchAgents/local.offsetclock.plist`
-- 引き継ぎ詳細: `/Users/masatomo/_git_repository/TimeAhead/HANDOVER.md`
+- ソース: `OffsetClock.swift`
+- 旧式の単体バイナリ: `offset-clock`
+- `.app` ビルドスクリプト: `scripts/build_app.sh`
+- `.dmg` ビルドスクリプト: `scripts/build_dmg.sh`
+- アプリアイコン元画像: `assets/TimeAheadIcon.png`
+- macOS アイコン: `assets/TimeAhead.icns`
+- 人間向けマニュアル: `docs/TimeAhead_User_Manual.pdf`
+- 開発引き継ぎ詳細: `HANDOVER.md`
 
 ## 使い方
 メニューバーの TimeAhead をクリックしてオフセットを変更します。
@@ -47,30 +51,41 @@ macOS のシステム時刻を変更せず、メニューバーに「現在時�
 
 ## ビルド
 ```bash
-swiftc "/Users/masatomo/_git_repository/TimeAhead/OffsetClock.swift" -o "/Users/masatomo/_git_repository/TimeAhead/offset-clock"
+swiftc "OffsetClock.swift" -o "offset-clock"
 ```
 
 ## `.app` 形式でビルド
 ```bash
-cd "/Users/masatomo/_git_repository/TimeAhead"
 ./scripts/build_app.sh
 ```
 
-- 生成物: `/Users/masatomo/_git_repository/TimeAhead/build/TimeAhead.app`
+- 生成物: `build/TimeAhead.app`
+- アイコン: `assets/TimeAhead.icns` が存在する場合、`Contents/Resources/TimeAhead.icns` として組み込まれます。
 - 署名IDを指定する場合:
 ```bash
-cd "/Users/masatomo/_git_repository/TimeAhead"
 SIGN_IDENTITY="Developer ID Application: YOUR_NAME (TEAM_ID)" ./scripts/build_app.sh
 ```
 
 ## `.dmg` 形式で配布用にビルド
 ```bash
-cd "/Users/masatomo/_git_repository/TimeAhead"
 ./scripts/build_dmg.sh
 ```
 
-- 生成物: `/Users/masatomo/_git_repository/TimeAhead/build/TimeAhead.dmg`
+- 生成物: `build/TimeAhead.dmg`
 - DMGには `TimeAhead.app` と `Applications` へのショートカットが入ります。
+
+## マニュアル
+人間向けの図解マニュアルは以下です。
+
+- PDF: `docs/TimeAhead_User_Manual.pdf`
+- LaTeX ソース: `docs/TimeAhead_User_Manual.tex`
+
+PDF を再生成する場合:
+```bash
+python3 /Users/masatomo/.codex/plugins/cache/openai-bundled/latex/0.2.0/scripts/compile_latex.py \
+  "$PWD/docs/TimeAhead_User_Manual.tex" \
+  --compiler tectonic
+```
 
 ## 他のMacへのインストール
 1. `TimeAhead.dmg` を対象Macにコピーして開く
@@ -108,5 +123,5 @@ launchctl bootout gui/$uid/local.offsetclock
 uid=$(id -u)
 launchctl bootout gui/$uid/local.offsetclock 2>/dev/null || true
 rm -f "/Users/masatomo/Library/LaunchAgents/local.offsetclock.plist"
-rm -f "/Users/masatomo/_git_repository/TimeAhead/offset-clock"
+rm -f "offset-clock"
 ```

@@ -1,0 +1,345 @@
+\documentclass[10pt,a4paper]{article}
+
+\usepackage{fontspec}
+\usepackage{xeCJK}
+\usepackage[margin=16mm]{geometry}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usetikzlibrary{positioning}
+
+\setmainfont{Helvetica Neue}
+\setsansfont{Helvetica Neue}
+\setmonofont{Menlo}
+\setCJKmainfont{Hiragino Sans}
+\setCJKsansfont{Hiragino Sans}
+\setCJKmonofont{Hiragino Sans}
+\XeTeXlinebreaklocale "ja"
+\XeTeXlinebreakskip=0pt plus 1pt
+\sloppy
+\emergencystretch=2em
+
+\definecolor{TimeTeal}{HTML}{17BDB7}
+\definecolor{TimeTealDark}{HTML}{087B80}
+\definecolor{TimeCoral}{HTML}{FF6F59}
+\definecolor{TimeYellow}{HTML}{FFD45A}
+\definecolor{TimeCream}{HTML}{FFF8EA}
+\definecolor{TimeInk}{HTML}{16323A}
+\definecolor{TimeMuted}{HTML}{5D7177}
+\definecolor{TimeLine}{HTML}{D7E6E5}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=TimeTealDark,
+  urlcolor=TimeCoral,
+  pdftitle={TimeAhead User Manual},
+  pdfauthor={TimeAhead}
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\textcolor{TimeTealDark}{TimeAhead}}
+\rhead{\textcolor{TimeMuted}{User Manual}}
+\cfoot{\textcolor{TimeMuted}{\thepage/\pageref{LastPage}}}
+\renewcommand{\headrulewidth}{0.2pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\setlist[itemize]{leftmargin=1.6em,itemsep=0.25em,topsep=0.35em}
+\setlist[enumerate]{leftmargin=1.8em,itemsep=0.3em,topsep=0.35em}
+\renewcommand{\arraystretch}{1.35}
+
+\newcommand{\chip}[2]{%
+  \tikz[baseline=(n.base)]\node[
+    rounded corners=5pt,
+    fill=#1,
+    text=white,
+    inner xsep=7pt,
+    inner ysep=3pt,
+    font=\sffamily\bfseries\small
+  ](n){#2};%
+}
+
+\newcommand{\sectionbar}[2]{%
+  \vspace{0.6em}
+  \noindent
+  \begin{tikzpicture}
+    \node[
+      rounded corners=8pt,
+      fill=#1,
+      text=white,
+      inner xsep=10pt,
+      inner ysep=7pt,
+      text width=\dimexpr\linewidth-22pt\relax,
+      font=\sffamily\bfseries\large
+    ] {#2};
+  \end{tikzpicture}
+  \vspace{0.35em}
+}
+
+\newcommand{\infocard}[4]{%
+  \begin{tikzpicture}
+    \node[
+      rounded corners=8pt,
+      draw=#1,
+      line width=0.8pt,
+      fill=#2,
+      inner sep=9pt,
+      text width=\dimexpr\linewidth-20pt\relax
+    ] {
+      {\sffamily\bfseries\textcolor{#1}{#3}}\par\vspace{0.25em}
+      {\small #4}
+    };
+  \end{tikzpicture}
+}
+
+\begin{document}
+
+\begin{titlepage}
+\pagecolor{TimeCream}
+\begin{tikzpicture}[remember picture,overlay]
+  \fill[TimeTeal] (current page.north west) rectangle ([yshift=-83mm]current page.north east);
+  \fill[TimeYellow] ([yshift=-83mm]current page.north west) rectangle ([yshift=-95mm]current page.north east);
+  \fill[TimeCoral] ([yshift=-95mm]current page.north west) rectangle ([yshift=-99mm]current page.north east);
+\end{tikzpicture}
+
+\vspace*{6mm}
+\begin{center}
+  \includegraphics[width=0.34\linewidth]{../assets/TimeAheadIcon.png}
+
+  \vspace{5mm}
+  {\Huge\sffamily\bfseries\textcolor{TimeInk}{TimeAhead}}\par
+  \vspace{2mm}
+  {\Large\sffamily\bfseries\textcolor{TimeInk}{メニューバーに「少し先の時間」を表示する時計}}\par
+  \vspace{6mm}
+  \chip{TimeCoral}{macOS menu bar utility}
+  \hspace{0.5em}
+  \chip{TimeTealDark}{offset clock}
+  \hspace{0.5em}
+  \chip{TimeYellow}{system time safe}
+\end{center}
+
+\vfill
+\noindent
+\begin{tikzpicture}
+  \node[
+    rounded corners=10pt,
+    fill=white,
+    draw=TimeLine,
+    line width=0.8pt,
+    inner sep=12pt,
+    text width=\dimexpr\linewidth-26pt\relax
+  ] {
+    {\Large\sffamily\bfseries\textcolor{TimeInk}{このマニュアルで分かること}}\par\vspace{0.5em}
+    \begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+      \textbf{\textcolor{TimeTealDark}{1. 何をするアプリか}} &
+      macOS のシステム時刻を変更せず、メニューバーにオフセット時刻を追加表示します。 \\
+      \textbf{\textcolor{TimeTealDark}{2. どう使うか}} &
+      左クリック、右クリック、プリセット、カスタム入力の操作を確認できます。 \\
+      \textbf{\textcolor{TimeTealDark}{3. どう配布・確認するか}} &
+      \texttt{.app} の場所、署名確認、起動確認、再ビルド手順を確認できます。 \\
+    \end{tabularx}
+  };
+\end{tikzpicture}
+\vspace*{8mm}
+{\small\textcolor{TimeMuted}{Generated from \texttt{docs/TimeAhead\_User\_Manual.tex}. Last updated: 2026-05-24.}}
+\end{titlepage}
+\nopagecolor
+
+\sectionbar{TimeTealDark}{1. TimeAhead の役割}
+
+\noindent
+\infocard{TimeTealDark}{white}{一言でいうと}{
+TimeAhead は、通常の時計とは別に「今から何分進めた時刻か」をメニューバーへ表示する小さな常駐アプリです。
+会議・配信・締切・タイムキープなどで、実際のシステム時刻を変えずに先読み時間を確認できます。
+}
+
+\vspace{0.8em}
+\begin{center}
+\begin{tikzpicture}[node distance=7mm, font=\sffamily]
+  \node[
+    rounded corners=9pt,
+    fill=TimeTeal!14,
+    draw=TimeTeal,
+    line width=0.8pt,
+    minimum width=40mm,
+    minimum height=18mm,
+    align=center
+  ] (real) {\bfseries 実際の現在時刻\\\large 10:20};
+
+  \node[
+    rounded corners=9pt,
+    fill=TimeYellow!35,
+    draw=TimeYellow!80!black,
+    line width=0.8pt,
+    minimum width=38mm,
+    minimum height=18mm,
+    align=center,
+    right=16mm of real
+  ] (offset) {\bfseries オフセット\\\large +10 min};
+
+  \node[
+    rounded corners=9pt,
+    fill=TimeCoral!12,
+    draw=TimeCoral,
+    line width=0.8pt,
+    minimum width=42mm,
+    minimum height=18mm,
+    align=center,
+    right=16mm of offset
+  ] (shown) {\bfseries 表示される時刻\\\large 10:30};
+
+  \draw[->,line width=1.2pt,TimeTealDark] (real) -- (offset);
+  \draw[->,line width=1.2pt,TimeTealDark] (offset) -- (shown);
+\end{tikzpicture}
+\end{center}
+
+\sectionbar{TimeCoral}{2. 画面と操作}
+
+\begin{center}
+\begin{tikzpicture}[font=\sffamily]
+  \node[
+    rounded corners=9pt,
+    fill=TimeInk,
+    text=white,
+    minimum width=150mm,
+    minimum height=13mm,
+    align=center
+  ] (bar) {};
+  \node[anchor=west,text=white] at ([xshift=5mm]bar.west) {\small Finder};
+  \node[
+    rounded corners=5pt,
+    fill=TimeTeal,
+    text=white,
+    inner xsep=8pt,
+    inner ysep=3pt,
+    anchor=east
+  ] at ([xshift=-8mm]bar.east) {\bfseries 10:30};
+  \node[anchor=south east,text=TimeMuted] at ([xshift=-5mm,yshift=3mm]bar.north east) {\small TimeAhead 表示};
+  \draw[->,line width=1pt,TimeCoral] ([xshift=-16mm,yshift=3mm]bar.north east) -- ([xshift=-23mm,yshift=1mm]bar.east);
+\end{tikzpicture}
+\end{center}
+
+\vspace{0.7em}
+\begin{tabularx}{\linewidth}{>{\bfseries\color{TimeTealDark}}p{34mm}X}
+左クリック & メニューを開きます。現在のオフセット、プリセット、カスタム入力、終了を選べます。 \\
+右クリック & カスタム入力を直接開きます。細かい分数をすぐ入力したいときに使います。 \\
+左ダブルクリック & 右クリックと同じく、カスタム入力を直接開きます。 \\
+再度アプリを開く & すでに起動中の場合でも、オフセット入力ポップアップを表示します。 \\
+\end{tabularx}
+
+\sectionbar{TimeTeal}{3. オフセットの選び方}
+
+\begin{center}
+\begin{tikzpicture}[font=\sffamily, node distance=5mm]
+  \foreach \label/\x/\c in {0/0/TimeTeal,+5/1/TimeYellow,+10/2/TimeCoral,+15/3/TimeTeal,+30/4/TimeYellow,+60/5/TimeCoral} {
+    \node[
+      circle,
+      fill=\c!85,
+      text=white,
+      minimum size=18mm,
+      align=center,
+      font=\bfseries
+    ] at (\x*2.2,0) {\label\\{\scriptsize min}};
+  }
+  \draw[TimeTealDark,line width=1pt] (-0.6,-1.2) -- (11.6,-1.2);
+  \node[anchor=north,text=TimeMuted] at (5.5,-1.3) {\small プリセットはすぐ選べる短時間の先読み用です};
+\end{tikzpicture}
+\end{center}
+
+\vspace{0.6em}
+\noindent
+\infocard{TimeCoral}{TimeCoral!8}{カスタム入力}{
+\texttt{Custom...} から任意の分数を入力できます。入力できる範囲は \texttt{-1440} から \texttt{1440} です。
+正の値は時間を進め、負の値は時間を遅らせます。
+}
+
+\sectionbar{TimeYellow!80!black}{4. インストールと起動}
+
+\begin{enumerate}
+  \item Finder で \texttt{build/TimeAhead.app} を確認します。
+  \item 通常利用する場合は \texttt{/Applications} にコピーして起動します。
+  \item 初回起動時に Gatekeeper の警告が出る場合は、右クリックして「開く」を選びます。
+  \item 起動後、メニューバー右側にオフセット時刻が表示されることを確認します。
+\end{enumerate}
+
+\vspace{0.5em}
+\begin{center}
+\begin{tikzpicture}[font=\sffamily, node distance=7mm]
+  \node[
+    rounded corners=8pt,
+    fill=TimeTeal!12,
+    draw=TimeTeal,
+    minimum width=38mm,
+    minimum height=16mm,
+    align=center
+  ] (build) {\bfseries build\\TimeAhead.app};
+  \node[
+    rounded corners=8pt,
+    fill=TimeYellow!35,
+    draw=TimeYellow!80!black,
+    minimum width=38mm,
+    minimum height=16mm,
+    align=center,
+    right=13mm of build
+  ] (apps) {\bfseries Applications\\にコピー};
+  \node[
+    rounded corners=8pt,
+    fill=TimeCoral!10,
+    draw=TimeCoral,
+    minimum width=38mm,
+    minimum height=16mm,
+    align=center,
+    right=13mm of apps
+  ] (run) {\bfseries 起動\\メニューバー確認};
+  \draw[->,line width=1.2pt,TimeTealDark] (build) -- (apps);
+  \draw[->,line width=1.2pt,TimeTealDark] (apps) -- (run);
+\end{tikzpicture}
+\end{center}
+
+\sectionbar{TimeTealDark}{5. 開発者・配布担当者向け確認}
+
+\noindent
+\begin{tabularx}{\linewidth}{>{\bfseries\color{TimeTealDark}}p{38mm}X}
+App bundle & \texttt{build/TimeAhead.app} \\
+アイコン元画像 & \texttt{assets/TimeAheadIcon.png} \\
+macOS アイコン & \texttt{assets/TimeAhead.icns} \\
+ビルドスクリプト & \texttt{scripts/build\_app.sh} \\
+PDF ソース & \texttt{docs/TimeAhead\_User\_Manual.tex} \\
+引き継ぎ & \texttt{HANDOVER.md} \\
+\end{tabularx}
+
+\vspace{0.7em}
+\noindent
+\infocard{TimeTealDark}{white}{再ビルド}{
+\texttt{./scripts/build\_app.sh} を実行すると、Swift ソースをコンパイルし、アイコンを組み込んだ \texttt{.app} を作成し、デフォルトでは ad-hoc 署名します。
+}
+
+\vspace{0.7em}
+\noindent
+\infocard{TimeCoral}{TimeCoral!8}{検証}{
+\texttt{codesign --verify --deep --strict --verbose=2 build/TimeAhead.app} で署名を確認します。
+その後 \texttt{open -n build/TimeAhead.app --args --no-prompt-on-launch} で起動確認できます。
+}
+
+\sectionbar{TimeCoral}{6. 注意点}
+
+\begin{itemize}
+  \item TimeAhead はシステム時刻を変更しません。標準時計とは別に、追加のオフセット時計を表示します。
+  \item 標準の macOS 時計を完全に置き換える機能はありません。
+  \item \texttt{build/} は Git 管理対象外です。配布前に必ず再ビルドしてください。
+  \item Developer ID 署名や notarization は未設定です。外部配布時は追加の署名・公証作業が必要です。
+  \item 現在の成果物は Apple Silicon / \texttt{arm64} 向けに検証されています。
+\end{itemize}
+
+\vfill
+\begin{center}
+\textcolor{TimeMuted}{\small TimeAhead keeps the real clock safe while showing the time you need to act on.}
+\end{center}
+
+\end{document}
