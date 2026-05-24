@@ -59,6 +59,13 @@ The intended user-facing behavior is:
 - `build/TimeAhead.app`
   - Generated app bundle. `build/` is ignored by Git.
   - Rebuild it from source instead of treating it as durable source.
+- `/Applications/TimeAhead.app`
+  - Installed runtime copy on this Mac as of 2026-05-24.
+  - This is the copy launched by the login startup LaunchAgent.
+- `/Users/masatomo/Library/LaunchAgents/com.masatomoota.timeahead.plist`
+  - Per-user LaunchAgent for login startup on this Mac.
+  - Runs `/Applications/TimeAhead.app/Contents/MacOS/TimeAhead --no-prompt-on-launch`.
+  - `RunAtLoad=true`, `KeepAlive=false`, `LimitLoadToSessionType=Aqua`.
 - `docs/TimeAhead_User_Manual.tex`
   - Human-facing graphical LaTeX manual.
 - `docs/TimeAhead_User_Manual.pdf`
@@ -154,6 +161,24 @@ sleep 1
 ps -p "$pid" -o pid=,comm=
 pkill -x TimeAhead
 ```
+
+Installed-runtime verification from 2026-05-24:
+
+- Rebuilt `build/TimeAhead.app` with `./scripts/build_app.sh`.
+- Copied it to `/Applications/TimeAhead.app` with `ditto`.
+- Verified `/Applications/TimeAhead.app` with
+  `codesign --verify --deep --strict --verbose=2 /Applications/TimeAhead.app`.
+- Confirmed `CFBundleIconFile => TimeAhead` in
+  `/Applications/TimeAhead.app/Contents/Info.plist`.
+- Confirmed the bundled icon hash matched the build artifact:
+  `18fac26cee4d0eb55e7277a44a134dbab4c203c8ae0edf72025c0197221f95df`.
+- Registered and loaded
+  `/Users/masatomo/Library/LaunchAgents/com.masatomoota.timeahead.plist`.
+- `launchctl print gui/501/com.masatomoota.timeahead` reported
+  `state = running`, `program = /Applications/TimeAhead.app/Contents/MacOS/TimeAhead`,
+  and `pid = 22685`.
+- `pgrep -fl 'TimeAhead.app/Contents/MacOS/TimeAhead'` showed
+  `/Applications/TimeAhead.app/Contents/MacOS/TimeAhead --no-prompt-on-launch`.
 
 Verified evidence from 2026-05-24:
 

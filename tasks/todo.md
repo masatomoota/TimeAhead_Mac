@@ -30,3 +30,20 @@
 - Rendered the 3-page PDF to PNG previews with `pdftoppm` and inspected the pages visually.
 - Verified `build/TimeAhead.app` after rebuild with `plutil`, `codesign --verify --deep --strict`, `file`, SHA-256 hash checks, and launch/stop verification.
 - PDF verification: `pdfinfo` reports A4, 3 pages, PDF 1.5, and `pdftotext` contains the expected Japanese sections.
+
+# Install to Applications and register startup
+
+## Plan
+- [x] Rebuild the current `build/TimeAhead.app` bundle.
+- [x] Copy the app bundle to `/Applications/TimeAhead.app`.
+- [x] Launch `/Applications/TimeAhead.app` and confirm the `TimeAhead` process is running.
+- [x] Register a per-user LaunchAgent for login startup.
+- [x] Verify the LaunchAgent is loaded and points to `/Applications/TimeAhead.app`.
+
+## Review
+- Rebuilt `build/TimeAhead.app` and copied it to `/Applications/TimeAhead.app`.
+- Verified the installed app with `codesign --verify --deep --strict`, `plutil`, and matching icon SHA-256 hashes.
+- Launched the app from `/Applications/TimeAhead.app` and confirmed the `TimeAhead` process.
+- Created `/Users/masatomo/Library/LaunchAgents/com.masatomoota.timeahead.plist` for per-user login startup.
+- Loaded and kickstarted the LaunchAgent; `launchctl print gui/501/com.masatomoota.timeahead` reports `state = running` and PID `22685`.
+- Updated `README.md` and `HANDOVER.md` to use the current LaunchAgent label instead of the old `local.offsetclock` label.

@@ -96,22 +96,22 @@ python3 /Users/masatomo/.codex/plugins/cache/openai-bundled/latex/0.2.0/scripts/
 ## 起動・再起動
 ```bash
 uid=$(id -u)
-launchctl bootout gui/$uid/local.offsetclock 2>/dev/null || true
-launchctl bootstrap gui/$uid "/Users/masatomo/Library/LaunchAgents/local.offsetclock.plist"
-launchctl kickstart -kp gui/$uid/local.offsetclock
+launchctl bootout gui/$uid/com.masatomoota.timeahead 2>/dev/null || true
+launchctl bootstrap gui/$uid "$HOME/Library/LaunchAgents/com.masatomoota.timeahead.plist"
+launchctl kickstart -kp gui/$uid/com.masatomoota.timeahead
 ```
 
 ## 状態確認
 ```bash
 uid=$(id -u)
-launchctl print gui/$uid/local.offsetclock | rg "state =|pid =|job state"
-pgrep -fl "offset-clock"
+launchctl print gui/$uid/com.masatomoota.timeahead | rg "state =|pid =|program =|arguments ="
+pgrep -fl "TimeAhead.app/Contents/MacOS/TimeAhead"
 ```
 
 ## 停止
 ```bash
 uid=$(id -u)
-launchctl bootout gui/$uid/local.offsetclock
+launchctl bootout gui/$uid/com.masatomoota.timeahead
 ```
 
 ## 既知制約
@@ -121,7 +121,8 @@ launchctl bootout gui/$uid/local.offsetclock
 ## 削除
 ```bash
 uid=$(id -u)
-launchctl bootout gui/$uid/local.offsetclock 2>/dev/null || true
-rm -f "/Users/masatomo/Library/LaunchAgents/local.offsetclock.plist"
+launchctl bootout gui/$uid/com.masatomoota.timeahead 2>/dev/null || true
+rm -f "$HOME/Library/LaunchAgents/com.masatomoota.timeahead.plist"
+rm -rf "/Applications/TimeAhead.app"
 rm -f "offset-clock"
 ```
