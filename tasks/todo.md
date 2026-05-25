@@ -47,3 +47,20 @@
 - Created `/Users/masatomo/Library/LaunchAgents/com.masatomoota.timeahead.plist` for per-user login startup.
 - Loaded and kickstarted the LaunchAgent; `launchctl print gui/501/com.masatomoota.timeahead` reports `state = running` and PID `22685`.
 - Updated `README.md` and `HANDOVER.md` to use the current LaunchAgent label instead of the old `local.offsetclock` label.
+
+# Reinstall on current Mac and restore auto-start
+
+## Plan
+- [x] Append the current installation wave and verification scope.
+- [x] Add a repeatable installer script that rebuilds the app, installs it into `/Applications`, and registers the LaunchAgent.
+- [x] Update the operator-facing install instructions in `README.md`.
+- [x] Run the installer on this Mac and prove the app is launched by `launchctl`.
+- [x] Record the live verification results and the lesson from the stale prior install record.
+
+## Review
+- Added `scripts/install_app.sh` so this repo can rebuild, install to `/Applications/TimeAhead.app`, recreate `~/Library/LaunchAgents/com.masatomoota.timeahead.plist`, and reload the LaunchAgent in one step.
+- Ran `./scripts/install_app.sh` on 2026-05-25 and confirmed the installed app bundle exists at `/Applications/TimeAhead.app`.
+- Verified `/Applications/TimeAhead.app` with `codesign --verify --deep --strict --verbose=2` and `plutil -p`; bundle metadata still reports `CFBundleIdentifier = com.masatomoota.timeahead`, `CFBundleIconFile = TimeAhead`, and `LSUIElement = true`.
+- Verified `~/Library/LaunchAgents/com.masatomoota.timeahead.plist` points at `/Applications/TimeAhead.app/Contents/MacOS/TimeAhead --no-prompt-on-launch`.
+- Verified `launchctl print gui/501/com.masatomoota.timeahead` reports `state = running`, `program = /Applications/TimeAhead.app/Contents/MacOS/TimeAhead`, and `pid = 84504`.
+- Verified `pgrep -af "/Applications/TimeAhead.app/Contents/MacOS/TimeAhead"` returns the running app process and the installed icon hash matches `assets/TimeAhead.icns`.

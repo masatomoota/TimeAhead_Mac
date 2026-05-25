@@ -1,13 +1,13 @@
 # TimeAhead Mac Development Handoff
 
-Last updated: 2026-05-24
+Last updated: 2026-05-25
 
 This handoff is written so another LLM can resume TimeAhead development without
 reading the originating chat. Treat this repository as the source of truth.
 
 ## Repository
 
-- Local path: `/Volumes/work-ssd-4TB-USB4/_Git_Repository/TimeAhead_Mac`
+- Local path: `/Volumes/MBP-Work2-4TB/_Git_Repository/TimeAhead_Mac`
 - Git remote: `https://github.com/masatomoota/TimeAhead_Mac.git`
 - Current branch during this handoff: `main`
 - App name: `TimeAhead`
@@ -49,6 +49,9 @@ The intended user-facing behavior is:
     - `SIGN_IDENTITY`
 - `scripts/build_dmg.sh`
   - Builds `build/TimeAhead.dmg` after ensuring `build/TimeAhead.app` exists.
+- `scripts/install_app.sh`
+  - Rebuilds `build/TimeAhead.app`, installs it to `/Applications/TimeAhead.app`,
+    writes the per-user LaunchAgent plist, and reloads the login startup job.
 - `assets/TimeAheadIcon.png`
   - Generated pop-style source image for the application icon.
   - The icon communicates a forward-shifted clock using a clock face, arrow,
@@ -73,8 +76,9 @@ The intended user-facing behavior is:
 - `tasks/todo.md`
   - Append-only task plan and verification notes for recent work.
 - `tasks/lessons.md`
-  - Not present as of this handoff. Create/update it only when a user correction
-    or fix pattern needs to be preserved.
+  - Present as of 2026-05-25.
+  - Records the rule to verify live install state instead of trusting stale
+    handoff or todo records.
 
 ## Current Code Behavior
 
@@ -162,10 +166,11 @@ ps -p "$pid" -o pid=,comm=
 pkill -x TimeAhead
 ```
 
-Installed-runtime verification from 2026-05-24:
+Installed-runtime verification from 2026-05-25:
 
 - Rebuilt `build/TimeAhead.app` with `./scripts/build_app.sh`.
-- Copied it to `/Applications/TimeAhead.app` with `ditto`.
+- Installed it with `./scripts/install_app.sh`, which rebuilds and copies the
+  bundle to `/Applications/TimeAhead.app` with `ditto`.
 - Verified `/Applications/TimeAhead.app` with
   `codesign --verify --deep --strict --verbose=2 /Applications/TimeAhead.app`.
 - Confirmed `CFBundleIconFile => TimeAhead` in
@@ -176,7 +181,7 @@ Installed-runtime verification from 2026-05-24:
   `/Users/masatomo/Library/LaunchAgents/com.masatomoota.timeahead.plist`.
 - `launchctl print gui/501/com.masatomoota.timeahead` reported
   `state = running`, `program = /Applications/TimeAhead.app/Contents/MacOS/TimeAhead`,
-  and `pid = 22685`.
+  and `pid = 84504`.
 - `pgrep -fl 'TimeAhead.app/Contents/MacOS/TimeAhead'` showed
   `/Applications/TimeAhead.app/Contents/MacOS/TimeAhead --no-prompt-on-launch`.
 

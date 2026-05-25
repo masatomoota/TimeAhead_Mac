@@ -87,11 +87,22 @@ python3 /Users/masatomo/.codex/plugins/cache/openai-bundled/latex/0.2.0/scripts/
   --compiler tectonic
 ```
 
+## このMacへインストールしてログイン時に自動起動
+```bash
+./scripts/install_app.sh
+```
+
+- 毎回 `build/TimeAhead.app` を再生成してから `/Applications/TimeAhead.app` へ配置します。
+- `~/Library/LaunchAgents/com.masatomoota.timeahead.plist` を作成し、`launchctl` で読み込み直します。
+- 起動時は `--no-prompt-on-launch` を付けて常駐起動します。
+
 ## 他のMacへのインストール
-1. `TimeAhead.dmg` を対象Macにコピーして開く
-2. `TimeAhead.app` を `Applications` にドラッグ
-3. `Applications/TimeAhead.app` を起動
-4. 初回は Gatekeeper 警告が出る場合があるため、右クリック→「開く」で許可
+1. `./scripts/build_dmg.sh` で `build/TimeAhead.dmg` を作成
+2. `TimeAhead.dmg` を対象Macにコピーして開く
+3. `TimeAhead.app` を `Applications` にドラッグ
+4. 対象Mac上で `Applications/TimeAhead.app` を起動
+5. 初回は Gatekeeper 警告が出る場合があるため、右クリック→「開く」で許可
+6. 自動起動も必要なら、このリポジトリを対象Macに置いて `./scripts/install_app.sh` を実行する
 
 ## 起動・再起動
 ```bash
