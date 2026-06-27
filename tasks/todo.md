@@ -72,4 +72,11 @@
 - [x] Preserve both sides of the unrelated histories: keep GitHub's public release docs/assets and keep local installer/task records.
 - [x] Merge `origin/main` into local `main` with explicit conflict resolution instead of force-pushing or rebasing.
 - [x] Rebuild and verify `TimeAhead.app`, then inspect Git state and push only after checks pass.
-- [ ] Record the final review evidence here after local and remote branches match.
+- [x] Record the final review evidence here after local and remote branches match.
+
+## Review
+- Initial state after `git fetch --prune origin`: `main...origin/main [ahead 6, behind 1]`, and `git diff origin/main...HEAD` failed because there was no merge base.
+- Created `backup/main-before-safe-sync-20260627` before integration.
+- Resolved unrelated-history conflicts by keeping GitHub's release-facing additions (`LICENSE`, `README.en.md`, `assets/screenshot-menubar.png`, universal `scripts/build_app.sh`) and preserving local installer/task records (`scripts/install_app.sh`, `tasks/todo.md`, `tasks/lessons.md`, `dist/*.zip`).
+- Verification passed: `./scripts/build_app.sh`, `plutil`, `codesign --verify --deep --strict`, `lipo -archs` (`x86_64 arm64`), `file`, icon SHA-256 match, and launch verification with a newly started `TimeAhead` PID.
+- Pushed merge commit `1c2bf89`; post-push `git rev-list --left-right --count origin/main...HEAD` returned `0 0`.
