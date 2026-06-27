@@ -80,3 +80,21 @@
 - Resolved unrelated-history conflicts by keeping GitHub's release-facing additions (`LICENSE`, `README.en.md`, `assets/screenshot-menubar.png`, universal `scripts/build_app.sh`) and preserving local installer/task records (`scripts/install_app.sh`, `tasks/todo.md`, `tasks/lessons.md`, `dist/*.zip`).
 - Verification passed: `./scripts/build_app.sh`, `plutil`, `codesign --verify --deep --strict`, `lipo -archs` (`x86_64 arm64`), `file`, icon SHA-256 match, and launch verification with a newly started `TimeAhead` PID.
 - Pushed merge commit `1c2bf89`; post-push `git rev-list --left-right --count origin/main...HEAD` returned `0 0`.
+
+# WindowServer Invalid window churn investigation
+
+## Plan
+- [x] Confirm the current installed TimeAhead runtime and capture pre-fix log counts.
+- [x] Review timer/status-item/menu lifecycle code and identify unnecessary UI updates.
+- [x] Patch TimeAhead so status item UI is updated only when the displayed minute text actually changes, with timer registration kept single-owner.
+- [x] Rebuild, install, and verify the app bundle, LaunchAgent, and process state.
+- [x] Capture post-fix WindowServer / TimeAhead log counts and compare with the handoff baseline.
+- [x] Record review evidence and any durable lesson before closing the wave.
+
+## Review
+- Pre-fix reproduction on `/Applications/TimeAhead.app` produced `WindowServer Invalid window last 60s = 121` and `TimeAhead NSSceneFenceAction last 60s = 117`.
+- Root cause in code was the per-second unconditional `statusItem.button?.title` assignment in `updateClock()`, which republished the same menu bar title for every timer tick.
+- `OffsetClock.swift` now caches the last rendered clock title, only writes `button.title` when the displayed value differs, makes timer startup invalidate any prior timer first, and avoids reapplying the same offset value.
+- Rebuilt and installed with `./scripts/install_app.sh`; `/Applications/TimeAhead.app` verifies with `codesign --verify --deep --strict`, and `launchctl print gui/501/com.masatomoota.timeahead` reports `state = running`, `pid = 61989`, and the expected `--no-prompt-on-launch` argument.
+- Initial post-fix log check after 65 seconds: `WindowServer Invalid window last 60s = 3`, `TimeAhead NSSceneFenceAction last 60s = 3`.
+- 10-minute installed-runtime sample stayed low: per-minute `WindowServer Invalid window` values were `3, 5, 3, 3, 3, 3, 3, 3, 3, 3`; `TimeAhead NSSceneFenceAction` values were `5, 5, 3, 4, 5, 4, 3, 5, 5, 5`; TimeAhead CPU was `0.0%` in every sample.

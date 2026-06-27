@@ -6,6 +6,7 @@ final class OffsetClockApp: NSObject, NSApplicationDelegate {
     private var menu: NSMenu?
     private var timer: Timer?
     private var pendingSingleClickAction: DispatchWorkItem?
+    private var lastRenderedClockTitle: String?
     private static let offsetDefaultsKey = "offsetMinutes"
     private let allowedOffsetRange = -1440...1440
     private let presetOffsets = [0, 5, 10, 15, 30, 60]
@@ -45,15 +46,7 @@ final class OffsetClockApp: NSObject, NSApplicationDelegate {
         configureStatusItemButton()
         buildMenu()
         updateClock()
-
-        timer = Timer.scheduledTimer(timeInterval: 1.0,
-                                     target: self,
-                                     selector: #selector(updateClock),
-                                     userInfo: nil,
-                                     repeats: true)
-        if let timer {
-            RunLoop.main.add(timer, forMode: .common)
-        }
+        startClockTimer()
 
         if promptOnLaunch {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
@@ -75,9 +68,17 @@ final class OffsetClockApp: NSObject, NSApplicationDelegate {
     }
 
     @objc private func updateClock() {
+        guard let button = statusItem?.button else {
+            return
+        }
         let offsetSeconds = TimeInterval(offsetMinutes * 60)
         let shifted = Date().addingTimeInterval(offsetSeconds)
-        statusItem.button?.title = formatter.string(from: shifted)
+        let nextTitle = formatter.string(from: shifted)
+        guard nextTitle != lastRenderedClockTitle || button.title != nextTitle else {
+            return
+        }
+        button.title = nextTitle
+        lastRenderedClockTitle = nextTitle
     }
 
     @objc private func selectPreset(_ sender: NSMenuItem) {
@@ -124,7 +125,20 @@ final class OffsetClockApp: NSObject, NSApplicationDelegate {
         guard allowedOffsetRange.contains(value) else {
             return
         }
+        guard value != offsetMinutes else {
+            return
+        }
         offsetMinutes = value
+    }
+
+    private func startClockTimer() {
+        timer?.invalidate()
+        let clockTimer = Timer(timeInterval: 1.0, repeats: true) { [weak self] _ in
+            self?.updateClock()
+        }
+        clockTimer.tolerance = 0.2
+        timer = clockTimer
+        RunLoop.main.add(clockTimer, forMode: .common)
     }
 
     private func buildMenu() {

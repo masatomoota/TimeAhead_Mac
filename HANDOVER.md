@@ -107,6 +107,12 @@ Offset rules:
 - Allowed range: `-1440...1440`
 - Presets: `0`, `5`, `10`, `15`, `30`, `60`
 - Default offset: `+10` unless overridden by `--offset-minutes`
+- The status item title is cached and only written when the rendered menu bar
+  text changes. This prevents per-second no-op `NSStatusItem` updates from
+  generating unnecessary ControlCenter / WindowServer scene work.
+- Timer startup is single-owner: creating the clock timer first invalidates any
+  previous timer and then installs one repeating timer in the main run loop's
+  common modes.
 
 ## Build Commands
 
@@ -193,6 +199,25 @@ git status --short --branch
 
 Close a GitHub sync only after the final branch state reports
 `main...origin/main` with no ahead/behind markers and a clean worktree.
+
+WindowServer churn verification from 2026-06-27:
+
+- Pre-fix installed app sample:
+  - `WindowServer Invalid window last 60s = 121`
+  - `TimeAhead NSSceneFenceAction last 60s = 117`
+- Fix:
+  - `OffsetClock.updateClock()` now skips `statusItem.button.title` writes when
+    the rendered clock text is unchanged.
+  - Timer setup now invalidates any prior timer before creating one new timer.
+- Initial post-fix installed app sample after 65 seconds:
+  - `WindowServer Invalid window last 60s = 3`
+  - `TimeAhead NSSceneFenceAction last 60s = 3`
+- 10-minute installed-runtime sample stayed low:
+  - `WindowServer Invalid window` per-minute values:
+    `3, 5, 3, 3, 3, 3, 3, 3, 3, 3`
+  - `TimeAhead NSSceneFenceAction` per-minute values:
+    `5, 5, 3, 4, 5, 4, 3, 5, 5, 5`
+  - TimeAhead CPU was `0.0%` in every sample.
 
 ## LaTeX Manual Build
 
