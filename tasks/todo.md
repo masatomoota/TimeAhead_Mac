@@ -64,3 +64,12 @@
 - Verified `~/Library/LaunchAgents/com.masatomoota.timeahead.plist` points at `/Applications/TimeAhead.app/Contents/MacOS/TimeAhead --no-prompt-on-launch`.
 - Verified `launchctl print gui/501/com.masatomoota.timeahead` reports `state = running`, `program = /Applications/TimeAhead.app/Contents/MacOS/TimeAhead`, and `pid = 84504`.
 - Verified `pgrep -af "/Applications/TimeAhead.app/Contents/MacOS/TimeAhead"` returns the running app process and the installed icon hash matches `assets/TimeAhead.icns`.
+
+# GitHub safe sync after unrelated-history divergence
+
+## Plan
+- [x] Fetch `origin` and prove the local/remote ancestry state before changing files.
+- [x] Preserve both sides of the unrelated histories: keep GitHub's public release docs/assets and keep local installer/task records.
+- [x] Merge `origin/main` into local `main` with explicit conflict resolution instead of force-pushing or rebasing.
+- [x] Rebuild and verify `TimeAhead.app`, then inspect Git state and push only after checks pass.
+- [ ] Record the final review evidence here after local and remote branches match.

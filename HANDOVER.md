@@ -1,19 +1,31 @@
 # TimeAhead Mac Development Handoff
 
-Last updated: 2026-05-25
+Last updated: 2026-06-27
 
-This handoff is written so another LLM can resume TimeAhead development without
-reading the originating chat. Treat this repository as the source of truth.
+This handoff is written so another developer (or LLM) can resume TimeAhead
+development without reading the originating chat. Treat this repository as the
+source of truth.
 
 ## Repository
 
-- Local path: `/Volumes/MBP-Work2-4TB/_Git_Repository/TimeAhead_Mac`
 - Git remote: `https://github.com/masatomoota/TimeAhead_Mac.git`
-- Current branch during this handoff: `main`
+- Local path on this Mac: `/Volumes/MBP-Work2-4TB/_Git_Repository/TimeAhead_Mac`
+- Current branch: `main`
 - App name: `TimeAhead`
 - Bundle identifier: `com.masatomoota.timeahead`
 - Minimum macOS version in bundle metadata: `13.0`
-- Current app version in build script: `1.0.0`
+- App version in build script: `1.0.0`
+
+## Current Sync Truth
+
+- On 2026-06-27, local `main` and `origin/main` had unrelated histories:
+  `git diff origin/main...HEAD` failed with `no merge base`.
+- The histories were the same app, not different projects. GitHub carried the
+  public release docs/assets (`LICENSE`, `README.en.md`,
+  `assets/screenshot-menubar.png`, universal build docs), while local history
+  carried the install script, task logs, and installed-runtime evidence.
+- The safe resolution is to preserve both sides with a normal merge commit using
+  `--allow-unrelated-histories`; do not force-push or reset away either side.
 
 ## Product Goal
 
@@ -37,48 +49,39 @@ The intended user-facing behavior is:
   - No SwiftPM package or Xcode project is currently present.
 - `scripts/build_app.sh`
   - Builds `build/TimeAhead.app` from `OffsetClock.swift`.
+  - Produces a universal (`arm64` + `x86_64`) binary by default; override with
+    `ARCHS` (e.g. `ARCHS="arm64"`).
   - Copies `assets/TimeAhead.icns` into `Contents/Resources/TimeAhead.icns`
     when the icon file exists.
   - Writes `Contents/Info.plist` including `CFBundleIconFile=TimeAhead`.
   - Performs ad-hoc code signing by default through `codesign --sign -`.
-  - Optional environment variables:
-    - `APP_NAME`
-    - `BUNDLE_ID`
-    - `VERSION`
-    - `ICON_FILE`
-    - `SIGN_IDENTITY`
+  - Optional environment variables: `APP_NAME`, `BUNDLE_ID`, `VERSION`,
+    `ICON_FILE`, `SIGN_IDENTITY`, `ARCHS`, `DEPLOYMENT_TARGET`.
 - `scripts/build_dmg.sh`
   - Builds `build/TimeAhead.dmg` after ensuring `build/TimeAhead.app` exists.
 - `scripts/install_app.sh`
   - Rebuilds `build/TimeAhead.app`, installs it to `/Applications/TimeAhead.app`,
     writes the per-user LaunchAgent plist, and reloads the login startup job.
 - `assets/TimeAheadIcon.png`
-  - Generated pop-style source image for the application icon.
-  - The icon communicates a forward-shifted clock using a clock face, arrow,
-    menu-bar cue, and plus badge.
+  - Pop-style source image for the application icon.
 - `assets/TimeAhead.icns`
-  - macOS icon built from `assets/TimeAheadIcon.png`.
-  - This is the icon file consumed by `scripts/build_app.sh`.
+  - macOS icon built from `assets/TimeAheadIcon.png`, consumed by
+    `scripts/build_app.sh`.
 - `build/TimeAhead.app`
-  - Generated app bundle. `build/` is ignored by Git.
-  - Rebuild it from source instead of treating it as durable source.
-- `/Applications/TimeAhead.app`
-  - Installed runtime copy on this Mac as of 2026-05-24.
-  - This is the copy launched by the login startup LaunchAgent.
-- `/Users/masatomo/Library/LaunchAgents/com.masatomoota.timeahead.plist`
-  - Per-user LaunchAgent for login startup on this Mac.
-  - Runs `/Applications/TimeAhead.app/Contents/MacOS/TimeAhead --no-prompt-on-launch`.
-  - `RunAtLoad=true`, `KeepAlive=false`, `LimitLoadToSessionType=Aqua`.
-- `docs/TimeAhead_User_Manual.tex`
-  - Human-facing graphical LaTeX manual.
-- `docs/TimeAhead_User_Manual.pdf`
-  - Built PDF manual.
+  - Generated app bundle. `build/` is ignored by Git; rebuild from source.
+- `docs/TimeAhead_User_Manual.tex` / `docs/TimeAhead_User_Manual.pdf`
+  - Human-facing graphical LaTeX manual and its built PDF.
 - `tasks/todo.md`
-  - Append-only task plan and verification notes for recent work.
+  - Append-only plan/review record for agent waves.
 - `tasks/lessons.md`
-  - Present as of 2026-05-25.
-  - Records the rule to verify live install state instead of trusting stale
-    handoff or todo records.
+  - Reusable operational lessons. Re-read before desktop runtime work.
+- `dist/TimeAhead-app-arm64.zip` / `dist/offset-clock-arm64.zip`
+  - Older local arm64 distribution archives preserved from the local history.
+
+The login-startup LaunchAgent is installed per user at
+`$HOME/Library/LaunchAgents/com.masatomoota.timeahead.plist`. It runs the
+installed `/Applications/TimeAhead.app` with `--no-prompt-on-launch`
+(`RunAtLoad=true`, `KeepAlive=false`, `LimitLoadToSessionType=Aqua`).
 
 ## Current Code Behavior
 
@@ -110,25 +113,22 @@ Offset rules:
 From repository root:
 
 ```bash
-./scripts/build_app.sh
+./scripts/build_app.sh           # universal build -> build/TimeAhead.app
+ARCHS="arm64" ./scripts/build_app.sh   # thin build for a single arch
+./scripts/build_dmg.sh           # build/TimeAhead.dmg
 ```
 
-Expected output:
+To rebuild, install into `/Applications`, and register the per-user login item
+on this Mac:
 
-```text
-Built app: /Volumes/work-ssd-4TB-USB4/_Git_Repository/TimeAhead_Mac/build/TimeAhead.app
+```bash
+./scripts/install_app.sh
 ```
 
 To use a Developer ID identity instead of ad-hoc signing:
 
 ```bash
 SIGN_IDENTITY="Developer ID Application: YOUR_NAME (TEAM_ID)" ./scripts/build_app.sh
-```
-
-To build the DMG:
-
-```bash
-./scripts/build_dmg.sh
 ```
 
 ## Verification Commands
@@ -140,24 +140,23 @@ manual artifacts.
 ./scripts/build_app.sh
 plutil -p build/TimeAhead.app/Contents/Info.plist
 codesign --verify --deep --strict --verbose=2 build/TimeAhead.app
+lipo -archs build/TimeAhead.app/Contents/MacOS/TimeAhead   # expect: x86_64 arm64
 file build/TimeAhead.app/Contents/MacOS/TimeAhead assets/TimeAhead.icns
-shasum -a 256 assets/TimeAheadIcon.png assets/TimeAhead.icns build/TimeAhead.app/Contents/Resources/TimeAhead.icns
+shasum -a 256 assets/TimeAhead.icns build/TimeAhead.app/Contents/Resources/TimeAhead.icns
 ```
 
-Launch verification used in this session:
+Launch verification (start, confirm alive, stop):
 
 ```bash
 if pgrep -x TimeAhead >/dev/null 2>&1; then
-  echo "preexisting TimeAhead process detected; stop it or skip destructive launch verification"
+  echo "preexisting TimeAhead process detected; stop it or skip launch verification"
   exit 2
 fi
 open -n "$PWD/build/TimeAhead.app" --args --no-prompt-on-launch
 pid=""
 for _ in {1..30}; do
   pid="$(pgrep -x TimeAhead || true)"
-  if [[ -n "$pid" ]]; then
-    break
-  fi
+  [[ -n "$pid" ]] && break
   sleep 0.2
 done
 test -n "$pid"
@@ -168,76 +167,41 @@ pkill -x TimeAhead
 
 Installed-runtime verification from 2026-05-25:
 
-- Rebuilt `build/TimeAhead.app` with `./scripts/build_app.sh`.
-- Installed it with `./scripts/install_app.sh`, which rebuilds and copies the
-  bundle to `/Applications/TimeAhead.app` with `ditto`.
-- Verified `/Applications/TimeAhead.app` with
-  `codesign --verify --deep --strict --verbose=2 /Applications/TimeAhead.app`.
-- Confirmed `CFBundleIconFile => TimeAhead` in
-  `/Applications/TimeAhead.app/Contents/Info.plist`.
-- Confirmed the bundled icon hash matched the build artifact:
-  `18fac26cee4d0eb55e7277a44a134dbab4c203c8ae0edf72025c0197221f95df`.
-- Registered and loaded
-  `/Users/masatomo/Library/LaunchAgents/com.masatomoota.timeahead.plist`.
-- `launchctl print gui/501/com.masatomoota.timeahead` reported
-  `state = running`, `program = /Applications/TimeAhead.app/Contents/MacOS/TimeAhead`,
-  and `pid = 84504`.
-- `pgrep -fl 'TimeAhead.app/Contents/MacOS/TimeAhead'` showed
-  `/Applications/TimeAhead.app/Contents/MacOS/TimeAhead --no-prompt-on-launch`.
+- `./scripts/install_app.sh` rebuilt the app, copied it to
+  `/Applications/TimeAhead.app`, wrote
+  `/Users/masatomo/Library/LaunchAgents/com.masatomoota.timeahead.plist`, and
+  reloaded the LaunchAgent.
+- `codesign --verify --deep --strict --verbose=2 /Applications/TimeAhead.app`
+  succeeded.
+- `plutil -p /Applications/TimeAhead.app/Contents/Info.plist` reported
+  `CFBundleIdentifier = com.masatomoota.timeahead`, `CFBundleIconFile =
+  TimeAhead`, and `LSUIElement = true`.
+- The installed icon hash matched `assets/TimeAhead.icns`.
+- `launchctl print gui/501/com.masatomoota.timeahead` reported `state =
+  running`, `program = /Applications/TimeAhead.app/Contents/MacOS/TimeAhead`,
+  and PID `84504` at the time of verification.
 
-Verified evidence from 2026-05-24:
+Safe sync verification used for this repository:
 
-- `plutil` showed `CFBundleIconFile => TimeAhead`, `LSUIElement => true`, and
-  `CFBundleIdentifier => com.masatomoota.timeahead`.
-- `codesign --verify --deep --strict --verbose=2 build/TimeAhead.app` succeeded.
-- `codesign -dv --verbose=4 build/TimeAhead.app` reported an ad-hoc signature,
-  thin `arm64` Mach-O app bundle, and CDHash
-  `9ee9ba6bcba93c29d239f5b746bf7df812a53467`.
-- `file build/TimeAhead.app/Contents/MacOS/TimeAhead` reported
-  `Mach-O 64-bit executable arm64`.
-- Icon hashes matched between source `assets/TimeAhead.icns` and the copied
-  bundle resource:
-  - `assets/TimeAheadIcon.png`:
-    `56b96a654db02ff6ac3ae6797bd14aced10cda9440cbd7358e98c6a47b8a7a81`
-  - `assets/TimeAhead.icns`:
-    `18fac26cee4d0eb55e7277a44a134dbab4c203c8ae0edf72025c0197221f95df`
-  - `build/TimeAhead.app/Contents/Resources/TimeAhead.icns`:
-    `18fac26cee4d0eb55e7277a44a134dbab4c203c8ae0edf72025c0197221f95df`
-- Launch verification started a `TimeAhead` process and stopped it after proving
-  it stayed alive.
+```bash
+git fetch --prune origin
+git rev-list --left-right --count origin/main...HEAD
+git diff --check
+git diff --cached --check
+git status --short --branch
+```
+
+Close a GitHub sync only after the final branch state reports
+`main...origin/main` with no ahead/behind markers and a clean worktree.
 
 ## LaTeX Manual Build
 
-The manual source is expected at:
-
-```text
-docs/TimeAhead_User_Manual.tex
-```
-
-Build it with the bundled LaTeX compile helper:
-
 ```bash
-python3 /Users/masatomo/.codex/plugins/cache/openai-bundled/latex/0.2.0/scripts/compile_latex.py \
-  /Volumes/work-ssd-4TB-USB4/_Git_Repository/TimeAhead_Mac/docs/TimeAhead_User_Manual.tex \
-  --compiler tectonic
+tectonic docs/TimeAhead_User_Manual.tex   # -> docs/TimeAhead_User_Manual.pdf
 ```
 
-Expected generated PDF:
-
-```text
-docs/TimeAhead_User_Manual.pdf
-```
-
-Verified PDF evidence from 2026-05-24:
-
-- `pdfinfo docs/TimeAhead_User_Manual.pdf` reported A4, 3 pages, PDF 1.5,
-  title `TimeAhead User Manual`, and file size `1726854` bytes.
-- `pdftotext docs/TimeAhead_User_Manual.pdf -` found the expected Japanese
-  sections including `TimeAhead`, `カスタム入力`, `開発者・配布担当者向け確認`,
-  and `build/TimeAhead.app`.
-- Rendered page previews were inspected from `pdftoppm -png -f 1 -l 3 -r 120`.
-- PDF SHA-256:
-  `b312f7f6f5661e66acdbca986625bc435feaac3ad7035dd108ce8b98ae2e85ca`
+The manual is A4, 3 pages, and contains the Japanese sections including
+`TimeAhead`, `カスタム入力`, and `開発者・配布担当者向け確認`.
 
 ## Known Constraints
 
@@ -246,11 +210,12 @@ Verified PDF evidence from 2026-05-24:
 - Earlier testing on macOS 26.2 showed that the standard right-side clock may
   reappear after attempts to hide it via `defaults` and `ControlCenter` restart.
 - `build/` is ignored and should be regenerated locally.
-- The app is ad-hoc signed unless `SIGN_IDENTITY` is provided.
-- No notarization workflow exists yet.
+- The app is ad-hoc signed unless `SIGN_IDENTITY` is provided. No notarization
+  workflow exists yet.
 - There is no SwiftPM package or Xcode project. Build automation uses `swiftc`
   directly.
-- The app is currently verified on Apple Silicon / `arm64`.
+- Distributed binaries are universal (`arm64` + `x86_64`). Runtime behavior has
+  been verified on Apple Silicon; Intel slices are produced via cross-compile.
 
 ## Safe Next Actions
 
@@ -263,13 +228,6 @@ Verified PDF evidence from 2026-05-24:
 4. If changing user-visible behavior, update both this handoff and
    `docs/TimeAhead_User_Manual.tex`, then rebuild the PDF.
 5. Before GitHub sync, inspect `git status --short` and stage only scoped files.
-
-## Current Completion Target
-
-The 2026-05-24 target is complete when all of the following are true:
-
-- `build/TimeAhead.app` exists and has the generated icon.
-- `HANDOVER.md` contains current repo state, commands, verification evidence,
-  caveats, and next actions.
-- `docs/TimeAhead_User_Manual.pdf` is built from LaTeX.
-- The scoped changes are committed and pushed to GitHub.
+6. Before desktop runtime claims, verify `/Applications/TimeAhead.app`,
+   `~/Library/LaunchAgents/com.masatomoota.timeahead.plist`, `launchctl`, and
+   the live `TimeAhead` process instead of trusting old handoff text.

@@ -15,11 +15,31 @@ RESOURCES_DIR="$CONTENTS_DIR/Resources"
 ICON_FILE="${ICON_FILE:-$ROOT_DIR/assets/TimeAhead.icns}"
 
 SIGN_IDENTITY="${SIGN_IDENTITY:--}"
+DEPLOYMENT_TARGET="${DEPLOYMENT_TARGET:-13.0}"
 
 rm -rf "$APP_DIR"
 mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
 
-swiftc "$ROOT_DIR/OffsetClock.swift" -o "$MACOS_DIR/$APP_NAME"
+# Build a universal (arm64 + x86_64) binary by compiling each slice and
+# combining them with lipo. Override ARCHS to build a thin binary, e.g.
+# ARCHS="arm64" ./scripts/build_app.sh
+ARCHS="${ARCHS:-arm64 x86_64}"
+SLICES=()
+for arch in $ARCHS; do
+  slice="$BUILD_DIR/$APP_NAME-$arch"
+  swiftc "$ROOT_DIR/OffsetClock.swift" \
+    -target "$arch-apple-macosx$DEPLOYMENT_TARGET" \
+    -o "$slice"
+  SLICES+=("$slice")
+done
+
+if [[ ${#SLICES[@]} -gt 1 ]]; then
+  lipo -create "${SLICES[@]}" -output "$MACOS_DIR/$APP_NAME"
+else
+  cp "${SLICES[0]}" "$MACOS_DIR/$APP_NAME"
+fi
+rm -f "${SLICES[@]}"
+echo "Architectures: $(lipo -archs "$MACOS_DIR/$APP_NAME")"
 
 if [[ -f "$ICON_FILE" ]]; then
   cp "$ICON_FILE" "$RESOURCES_DIR/TimeAhead.icns"

@@ -1,6 +1,10 @@
 # TimeAhead
 
+**日本語** | [English](README.en.md)
+
 macOS のシステム時刻を変更せず、メニューバーに「現在時刻 + 任意分」の時計を表示する小さな常駐アプリです。
+
+![TimeAhead をメニューバーに表示した様子](assets/screenshot-menubar.png)
 
 ## 概要
 - `NSStatusBar` 常駐アプリとして動作
@@ -10,9 +14,8 @@ macOS のシステム時刻を変更せず、メニューバーに「現在時�
 
 ## 動作環境
 - OS: macOS 13.0 以上
-- CPU: Apple Silicon (`arm64`)
-- 配布済みバイナリ (`offset-clock` / `build/TimeAhead.app` / `dist/*.zip`) は `arm64` 向け
-- Intel Mac で使う場合は、対象Mac上でソースからビルドして実行
+- CPU: Apple Silicon (`arm64`) / Intel (`x86_64`) 両対応
+- 配布バイナリ（[Releases](https://github.com/masatomoota/TimeAhead_Mac/releases) の `*.zip`）は **ユニバーサルバイナリ**（`arm64` + `x86_64`）
 - ソースビルドに必要: Xcode Command Line Tools (`swiftc` が利用可能なこと)
 - メニューバー常駐アプリのため、GUI セッション (Aqua) での実行が前提
 
@@ -21,6 +24,7 @@ macOS のシステム時刻を変更せず、メニューバーに「現在時�
 - 旧式の単体バイナリ: `offset-clock`
 - `.app` ビルドスクリプト: `scripts/build_app.sh`
 - `.dmg` ビルドスクリプト: `scripts/build_dmg.sh`
+- このMacへのインストーラ: `scripts/install_app.sh`
 - アプリアイコン元画像: `assets/TimeAheadIcon.png`
 - macOS アイコン: `assets/TimeAhead.icns`
 - 人間向けマニュアル: `docs/TimeAhead_User_Manual.pdf`
@@ -51,7 +55,15 @@ macOS のシステム時刻を変更せず、メニューバーに「現在時�
 
 ## ビルド
 ```bash
+# 現在のアーキ向けの簡易ビルド
 swiftc "OffsetClock.swift" -o "offset-clock"
+```
+
+ユニバーサルバイナリ（`arm64` + `x86_64`）を手動でビルドする場合:
+```bash
+swiftc OffsetClock.swift -target arm64-apple-macosx13.0  -o offset-clock-arm64
+swiftc OffsetClock.swift -target x86_64-apple-macosx13.0 -o offset-clock-x86_64
+lipo -create offset-clock-arm64 offset-clock-x86_64 -output offset-clock
 ```
 
 ## `.app` 形式でビルド
@@ -59,8 +71,12 @@ swiftc "OffsetClock.swift" -o "offset-clock"
 ./scripts/build_app.sh
 ```
 
-- 生成物: `build/TimeAhead.app`
+- 生成物: `build/TimeAhead.app`（既定で **ユニバーサルバイナリ** `arm64` + `x86_64`）
 - アイコン: `assets/TimeAhead.icns` が存在する場合、`Contents/Resources/TimeAhead.icns` として組み込まれます。
+- 特定アーキのみでビルドする場合は `ARCHS` を指定:
+```bash
+ARCHS="arm64" ./scripts/build_app.sh
+```
 - 署名IDを指定する場合:
 ```bash
 SIGN_IDENTITY="Developer ID Application: YOUR_NAME (TEAM_ID)" ./scripts/build_app.sh
@@ -80,12 +96,18 @@ SIGN_IDENTITY="Developer ID Application: YOUR_NAME (TEAM_ID)" ./scripts/build_ap
 - PDF: `docs/TimeAhead_User_Manual.pdf`
 - LaTeX ソース: `docs/TimeAhead_User_Manual.tex`
 
-PDF を再生成する場合:
+PDF を再生成する場合（[Tectonic](https://tectonic-typesetting.github.io/) を使用）:
 ```bash
-python3 /Users/masatomo/.codex/plugins/cache/openai-bundled/latex/0.2.0/scripts/compile_latex.py \
-  "$PWD/docs/TimeAhead_User_Manual.tex" \
-  --compiler tectonic
+tectonic docs/TimeAhead_User_Manual.tex
 ```
+
+## ダウンロード（ビルド済みバイナリ）
+ビルド済みのユニバーサルバイナリ（`arm64` + `x86_64`）は [Releases](https://github.com/masatomoota/TimeAhead_Mac/releases) ページから入手できます。Apple Silicon / Intel どちらの Mac でも動作します。
+
+- `TimeAhead-app-universal.zip` … メニューバー常駐アプリ (`TimeAhead.app`)
+- `offset-clock-universal.zip` … 旧式の単体 CLI バイナリ
+
+> **注意:** 配布バイナリは Apple Developer ID 署名・notarization を行っていない（ad-hoc 署名）ため、初回起動時に Gatekeeper の警告が出ます。下記「Gatekeeper 警告の回避」を参照してください。
 
 ## このMacへインストールしてログイン時に自動起動
 ```bash
@@ -97,12 +119,26 @@ python3 /Users/masatomo/.codex/plugins/cache/openai-bundled/latex/0.2.0/scripts/
 - 起動時は `--no-prompt-on-launch` を付けて常駐起動します。
 
 ## 他のMacへのインストール
-1. `./scripts/build_dmg.sh` で `build/TimeAhead.dmg` を作成
-2. `TimeAhead.dmg` を対象Macにコピーして開く
-3. `TimeAhead.app` を `Applications` にドラッグ
-4. 対象Mac上で `Applications/TimeAhead.app` を起動
-5. 初回は Gatekeeper 警告が出る場合があるため、右クリック→「開く」で許可
-6. 自動起動も必要なら、このリポジトリを対象Macに置いて `./scripts/install_app.sh` を実行する
+1. [Releases](https://github.com/masatomoota/TimeAhead_Mac/releases) から `TimeAhead-app-universal.zip` をダウンロードして展開
+2. `TimeAhead.app` を `Applications` にドラッグ
+3. `Applications/TimeAhead.app` を起動
+
+### Gatekeeper 警告の回避
+未署名アプリのため、ダブルクリックすると「開発元を検証できないため開けません」と表示されます。以下のいずれかで許可してください。
+
+**方法A: 右クリックで開く（推奨・初回のみ）**
+1. `Applications/TimeAhead.app` を **右クリック（Control+クリック）→「開く」**
+2. 確認ダイアログで再度「開く」を選択
+
+**方法B: システム設定から許可**
+1. 一度ダブルクリックして警告を閉じる
+2. 「システム設定 → プライバシーとセキュリティ」を開く
+3. 下部の「"TimeAhead" は開発元を確認できないため…」の横の **「このまま開く」** をクリック
+
+**方法C: 隔離属性をターミナルで除去**
+```bash
+xattr -dr com.apple.quarantine /Applications/TimeAhead.app
+```
 
 ## 起動・再起動
 ```bash
